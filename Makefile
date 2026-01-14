@@ -6,20 +6,26 @@ BINARY_NAME=uppi-agent
 # Version
 VERSION?=1.0.0
 
+# Build directory
+CMD_DIR=./cmd/uppi-agent
+
+# Package for version injection
+VERSION_PKG=github.com/janyksteenbeek/uppi-server-agent/internal/config
+
 # Build flags
-LDFLAGS=-ldflags="-w -s -X main.Version=$(VERSION)"
+LDFLAGS=-ldflags="-w -s -X $(VERSION_PKG).Version=$(VERSION)"
 
 # Default target
 all: build
 
 # Build for current platform
 build:
-	go build $(LDFLAGS) -o $(BINARY_NAME) .
+	go build $(LDFLAGS) -o $(BINARY_NAME) $(CMD_DIR)
 
 # Build for Linux platforms
 build-linux:
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_NAME)-amd64 .
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_NAME)-arm64 .
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_NAME)-amd64 $(CMD_DIR)
+	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_NAME)-arm64 $(CMD_DIR)
 
 # Build for all supported platforms
 build-all: build-linux
@@ -48,7 +54,7 @@ deps:
 
 # Development build with debug info
 dev:
-	go build -o $(BINARY_NAME) .
+	go build -o $(BINARY_NAME) $(CMD_DIR)
 
 # Install to /usr/local/bin (requires sudo)
 install: build
@@ -60,7 +66,7 @@ uninstall:
 
 # Run locally for testing
 run:
-	go run . test-server-id:test-secret-for-testing --skip-updates
+	go run $(CMD_DIR) test-server-id:test-secret-for-testing --skip-updates
 
 # Check if dependencies are up to date
 check-deps:

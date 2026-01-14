@@ -1,4 +1,4 @@
-package main
+package updater
 
 import (
 	"encoding/json"
@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/janyksteenbeek/uppi-server-agent/internal/config"
 )
 
 type GitHubRelease struct {
@@ -21,13 +23,12 @@ type GitHubRelease struct {
 	} `json:"assets"`
 }
 
-func checkForUpdates() {
+// CheckForUpdates checks GitHub for new releases and updates if available
+func CheckForUpdates() {
 	log.Println("Checking for updates...")
 
-	// Get current version
-	currentVersion := Version
+	currentVersion := config.Version
 
-	// Check for latest release
 	latestRelease, err := getLatestRelease()
 	if err != nil {
 		log.Printf("Failed to check for updates: %v", err)
@@ -69,18 +70,15 @@ func getLatestRelease() (*GitHubRelease, error) {
 }
 
 func isNewerVersion(latest, current string) bool {
-	// Simple version comparison - in production, use proper semver
 	latest = strings.TrimPrefix(latest, "v")
 	current = strings.TrimPrefix(current, "v")
 	return latest != current
 }
 
 func performUpdate(release *GitHubRelease) error {
-	// Determine architecture
 	arch := runtime.GOARCH
 	assetName := fmt.Sprintf("uppi-agent-%s", arch)
 
-	// Find the asset for our architecture
 	var downloadURL string
 	for _, asset := range release.Assets {
 		if asset.Name == assetName {
@@ -93,39 +91,32 @@ func performUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("no asset found for architecture %s", arch)
 	}
 
-	// Download the new binary
 	tempFile := "/tmp/uppi-agent-new"
 	if err := downloadFile(downloadURL, tempFile); err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
 
-	// Make it executable
 	if err := os.Chmod(tempFile, 0755); err != nil {
 		return fmt.Errorf("failed to make new binary executable: %w", err)
 	}
 
-	// Get current executable path
 	currentPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	// Backup current binary
 	backupPath := currentPath + ".backup"
 	if err := copyFile(currentPath, backupPath); err != nil {
 		log.Printf("Warning: failed to create backup: %v", err)
 	}
 
-	// Replace current binary
 	if err := copyFile(tempFile, currentPath); err != nil {
-		// Try to restore backup
 		if backupErr := copyFile(backupPath, currentPath); backupErr != nil {
 			log.Printf("Critical: failed to restore backup after failed update: %v", backupErr)
 		}
 		return fmt.Errorf("failed to replace binary: %w", err)
 	}
 
-	// Cleanup
 	os.Remove(tempFile)
 	os.Remove(backupPath)
 
@@ -171,7 +162,6 @@ func copyFile(src, dst string) error {
 		return err
 	}
 
-	// Copy permissions
 	sourceInfo, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -181,21 +171,17 @@ func copyFile(src, dst string) error {
 }
 
 func restartAgent() {
-	// If running as systemd service, restart it
 	if isSystemdService() {
 		cmd := exec.Command("systemctl", "restart", "uppi-agent")
 		cmd.Run()
 		return
 	}
 
-	// Otherwise, restart the process
 	args := os.Args
-
 	if err := exec.Command(args[0], args[1:]...).Start(); err != nil {
 		log.Printf("Failed to restart: %v", err)
 	}
 
-	// Exit current process after short delay
 	go func() {
 		time.Sleep(2 * time.Second)
 		os.Exit(0)
@@ -203,7 +189,5 @@ func restartAgent() {
 }
 
 func isSystemdService() bool {
-	// Simple check if we're running under systemd
-	return os.Getenv("SYSTEMD_EXEC_PID") != "" ||
-		os.Getppid() == 1 // PID 1 is usually systemd
+	return os.Getenv("SYSTEMD_EXEC_PID") != "" || os.Getppid() == 1
 }
