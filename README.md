@@ -15,13 +15,15 @@ A lightweight monitoring daemon for Linux servers that reports system metrics to
 Use the one-liner installation command provided by your Uppi dashboard:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/main/install.sh | sudo bash -s -- <your-64-char-secret>
+curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/main/install.sh | sudo bash -s -- <your-token>
 ```
+
+The token format is `{serverId}:{secret}`, which you can obtain from your Uppi dashboard.
 
 Or with custom instance and interval:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/main/install.sh | sudo bash -s -- <secret> https://your-instance.com 5
+curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/main/install.sh | sudo bash -s -- <token> https://your-instance.com 5
 ```
 
 ## Manual Installation
@@ -43,13 +45,15 @@ curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/mai
 
 3. Run the agent:
    ```bash
-   uppi-agent <your-64-char-secret> --instance=https://uppi.dev --interval-minutes=1
+   uppi-agent <serverId>:<secret> --instance=https://uppi.dev --interval-minutes=1
    ```
 
 ## Usage
 
 ```bash
-uppi-agent [secret] [flags]
+uppi-agent [token] [flags]
+
+Token format: {serverId}:{secret}
 
 Flags:
   --instance string         Instance URL (default "https://uppi.dev")
@@ -84,7 +88,7 @@ sudo systemctl start uppi-agent
 Configuration is stored in `/etc/uppi-agent/config`:
 
 ```
-SECRET=your-64-character-secret
+TOKEN=serverId:your-secret
 INSTANCE=https://uppi.dev
 INSTALLED_AT=2024-01-01T00:00:00Z
 VERSION=v1.0.0

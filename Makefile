@@ -60,7 +60,7 @@ uninstall:
 
 # Run locally for testing
 run:
-	go run . test-secret-that-is-exactly-64-characters-long-for-testing --skip-updates
+	go run . test-server-id:test-secret-for-testing --skip-updates
 
 # Check if dependencies are up to date
 check-deps:

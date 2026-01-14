@@ -88,7 +88,7 @@ download_latest_release() {
 }
 
 create_service_file() {
-    local secret=$1
+    local token=$1
     local instance=${2:-"https://uppi.dev"}
     local interval=${3:-"1"}
     
@@ -103,7 +103,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-ExecStart=$INSTALL_DIR/uppi-agent $secret --instance=$instance --interval-minutes=$interval
+ExecStart=$INSTALL_DIR/uppi-agent $token --instance=$instance --interval-minutes=$interval
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -117,7 +117,7 @@ EOF
 }
 
 create_config_directory() {
-    local secret=$1
+    local token=$1
     local instance=${2:-"https://uppi.dev"}
     
     log_info "Creating configuration directory..."
@@ -125,7 +125,7 @@ create_config_directory() {
     mkdir -p "$CONFIG_DIR"
     
     cat > "$CONFIG_FILE" << EOF
-SECRET=$secret
+TOKEN=$token
 INSTANCE=$instance
 INSTALLED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 VERSION=$(curl -s "$RELEASE_URL" | grep -o '"tag_name": "[^"]*' | cut -d '"' -f 4)
@@ -168,23 +168,25 @@ show_status() {
 
 # Main installation function
 main() {
-    local secret=$1
+    local token=$1
     local instance=${2:-"https://uppi.dev"}
     local interval=${3:-"1"}
     
-    if [[ -z "$secret" ]]; then
-        log_error "Usage: $0 <secret> [instance] [interval_minutes]"
-        log_error "Example: $0 abc123...xyz https://uppi.dev 1"
+    if [[ -z "$token" ]]; then
+        log_error "Usage: $0 <token> [instance] [interval_minutes]"
+        log_error "Token format: {serverId}:{secret}"
+        log_error "Example: $0 abc123:xyz789... https://uppi.dev 1"
         exit 1
     fi
     
-    if [[ ${#secret} -ne 64 ]]; then
-        log_error "Secret must be exactly 64 characters long"
+    # Validate token format (must contain a colon)
+    if [[ "$token" != *":"* ]]; then
+        log_error "Token must be in format {serverId}:{secret}"
         exit 1
     fi
     
     log_info "Starting Uppi Agent installation..."
-    echo "Secret: ${secret:0:8}...${secret: -8}"
+    echo "Token: ${token:0:8}...${token: -8}"
     echo "Instance: $instance"
     echo "Interval: $interval minutes"
     echo
@@ -201,8 +203,8 @@ main() {
     log_info "Detected architecture: $arch"
     
     download_latest_release "$arch"
-    create_config_directory "$secret" "$instance"
-    create_service_file "$secret" "$instance" "$interval"
+    create_config_directory "$token" "$instance"
+    create_service_file "$token" "$instance" "$interval"
     enable_and_start_service
     show_status
 }

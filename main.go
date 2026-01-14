@@ -9,11 +9,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
@@ -35,6 +38,9 @@ type Config struct {
 }
 
 type ServerMetrics struct {
+	Hostname           string          `json:"hostname,omitempty"`
+	IpAddress          string          `json:"ip_address,omitempty"`
+	Os                 string          `json:"os,omitempty"`
 	CpuUsage           *float64        `json:"cpu_usage,omitempty"`
 	CpuLoad1           *float64        `json:"cpu_load_1,omitempty"`
 	CpuLoad5           *float64        `json:"cpu_load_5,omitempty"`
@@ -73,19 +79,26 @@ func main() {
 	var config Config
 
 	var rootCmd = &cobra.Command{
-		Use:   "uppi-agent [secret]",
+		Use:   "uppi-agent [token]",
 		Short: "Uppi Server Monitoring Agent",
 		Long:  `A daemon for monitoring server metrics and reporting to Uppi monitoring service.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			config.Secret = args[0]
-			if len(config.Secret) != 64 {
-				log.Fatal("Secret must be exactly 64 characters long")
+			token := args[0]
+			parts := strings.SplitN(token, ":", 2)
+			if len(parts) != 2 {
+				log.Fatal("Token must be in format {serverId}:{secret}")
 			}
 
-			// TODO: The server ID should be provided by the installation script
-			// or retrieved from the server API. For now, we'll use a hash of the secret
-			config.ServerId = fmt.Sprintf("%x", sha256.Sum256([]byte(config.Secret)))[:16]
+			config.ServerId = parts[0]
+			config.Secret = parts[1]
+
+			if config.ServerId == "" {
+				log.Fatal("Server ID cannot be empty")
+			}
+			if config.Secret == "" {
+				log.Fatal("Secret cannot be empty")
+			}
 
 			runDaemon(config)
 		},
@@ -138,6 +151,19 @@ func collectMetrics() (*ServerMetrics, error) {
 	metrics := &ServerMetrics{
 		CollectedAt: time.Now().UTC().Format(time.RFC3339),
 	}
+
+	// Hostname
+	if hostname, err := os.Hostname(); err == nil {
+		metrics.Hostname = hostname
+	}
+
+	// Host info (OS)
+	if hostInfo, err := host.Info(); err == nil {
+		metrics.Os = fmt.Sprintf("%s %s", hostInfo.Platform, hostInfo.PlatformVersion)
+	}
+
+	// Main IP address
+	metrics.IpAddress = getMainIPAddress()
 
 	// CPU metrics
 	cpuPercent, err := cpu.Percent(time.Second, false)
@@ -260,4 +286,37 @@ func createHMACSignature(timestamp, payload, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(message))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func getMainIPAddress() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+
+	for _, iface := range interfaces {
+		// Skip loopback and down interfaces
+		if iface.Name == "lo" || len(iface.Addrs) == 0 {
+			continue
+		}
+
+		for _, addr := range iface.Addrs {
+			// Parse the address
+			ip := addr.Addr
+			// Remove CIDR notation if present
+			if idx := strings.Index(ip, "/"); idx != -1 {
+				ip = ip[:idx]
+			}
+			// Skip IPv6 and loopback addresses
+			if strings.Contains(ip, ":") || ip == "127.0.0.1" {
+				continue
+			}
+			// Return the first valid IPv4 address
+			if ip != "" {
+				return ip
+			}
+		}
+	}
+
+	return ""
 }
