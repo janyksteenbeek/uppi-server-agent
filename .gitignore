@@ -18,8 +18,8 @@ vendor/
 go.work
 
 # Binary output
-uppi-agent
-uppi-agent-*
+/uppi-agent
+/uppi-agent-*
 
 # IDE files
 .vscode/
