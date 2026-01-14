@@ -89,7 +89,7 @@ func performUpdate(release *GitHubRelease) error {
 	}
 
 	if downloadURL == "" {
-		return fmt.Errorf("no asset found for architecture %s", arch)
+		return fmt.Errorf("no asset found for architecture %s-%s", goos, arch)
 	}
 
 	tempFile := "/tmp/uppi-agent-new"
