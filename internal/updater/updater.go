@@ -76,8 +76,9 @@ func isNewerVersion(latest, current string) bool {
 }
 
 func performUpdate(release *GitHubRelease) error {
+	goos := runtime.GOOS
 	arch := runtime.GOARCH
-	assetName := fmt.Sprintf("uppi-agent-%s", arch)
+	assetName := fmt.Sprintf("uppi-agent-%s-%s", goos, arch)
 
 	var downloadURL string
 	for _, asset := range release.Assets {

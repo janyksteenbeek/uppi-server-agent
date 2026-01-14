@@ -62,7 +62,7 @@ download_latest_release() {
     
     # Get latest release info
     local release_info=$(curl -s "$RELEASE_URL")
-    local download_url=$(echo "$release_info" | grep -o "\"browser_download_url\": \"[^\"]*uppi-agent-$arch\"" | cut -d '"' -f 4)
+    local download_url=$(echo "$release_info" | grep -o "\"browser_download_url\": \"[^\"]*uppi-agent-linux-$arch\"" | cut -d '"' -f 4)
     
     if [[ -z "$download_url" ]]; then
         log_error "Could not find download URL for architecture: $arch"
@@ -103,7 +103,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-ExecStart=$INSTALL_DIR/uppi-agent $token --instance=$instance --interval-minutes=$interval
+ExecStart=$INSTALL_DIR/uppi-agent $token --instance=$instance --interval-minutes=$interval --auto-update
 Restart=always
 RestartSec=10
 StandardOutput=journal

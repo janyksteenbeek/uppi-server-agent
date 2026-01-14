@@ -66,7 +66,7 @@ uninstall:
 
 # Run locally for testing
 run:
-	go run $(CMD_DIR) test-server-id:test-secret-for-testing --skip-updates
+	go run $(CMD_DIR) test-server-id:test-secret-for-testing
 
 # Check if dependencies are up to date
 check-deps:

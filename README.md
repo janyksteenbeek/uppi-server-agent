@@ -5,7 +5,7 @@ A lightweight monitoring daemon for Linux servers that reports system metrics to
 ## Features
 
 - **System Metrics**: CPU usage, memory, disk, and network monitoring
-- **Auto-updates**: Automatically updates to the latest stable release
+- **Auto-updates**: Automatically updates to the latest stable release (opt-in)
 - **Secure**: HMAC-SHA256 authentication with the monitoring service
 - **Lightweight**: Single binary with minimal resource usage
 - **Systemd Integration**: Runs as a system service with auto-restart
@@ -30,11 +30,11 @@ curl -sSL https://raw.githubusercontent.com/janyksteenbeek/uppi-server-agent/mai
 
 1. Download the latest release for your architecture:
    ```bash
-   # For amd64
-   wget https://github.com/janyksteenbeek/uppi-server-agent/releases/latest/download/uppi-agent-amd64
+   # For Linux amd64
+   wget https://github.com/janyksteenbeek/uppi-server-agent/releases/latest/download/uppi-agent-linux-amd64
    
-   # For arm64
-   wget https://github.com/janyksteenbeek/uppi-server-agent/releases/latest/download/uppi-agent-arm64
+   # For Linux arm64
+   wget https://github.com/janyksteenbeek/uppi-server-agent/releases/latest/download/uppi-agent-linux-arm64
    ```
 
 2. Make it executable and move to `/usr/local/bin`:
@@ -58,7 +58,7 @@ Token format: {serverId}:{secret}
 Flags:
   --instance string         Instance URL (default "https://uppi.dev")
   --interval-minutes int    Reporting interval in minutes (default 1)
-  --skip-updates           Skip automatic updates
+  --auto-update            Enable automatic updates (default: false)
   -h, --help               Help for uppi-agent
 ```
 
@@ -119,13 +119,13 @@ The agent collects the following metrics:
 
 ```bash
 # Build for current platform
-go build -o uppi-agent .
+make build
 
-# Build for Linux amd64
-GOOS=linux GOARCH=amd64 go build -o uppi-agent-amd64 .
+# Build for Linux amd64/arm64
+make build-linux
 
-# Build for Linux arm64
-GOOS=linux GOARCH=arm64 go build -o uppi-agent-arm64 .
+# Or manually:
+go build -o uppi-agent ./cmd/uppi-agent
 ```
 
 ### Dependencies

@@ -10,6 +10,6 @@ type Config struct {
 	Secret          string
 	Instance        string
 	ServerId        string
-	SkipUpdates     bool
+	AutoUpdate      bool
 	IntervalMinutes int
 }

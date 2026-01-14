@@ -42,7 +42,7 @@ func main() {
 	}
 
 	rootCmd.Flags().StringVar(&cfg.Instance, "instance", config.DefaultInstance, "Instance URL")
-	rootCmd.Flags().BoolVar(&cfg.SkipUpdates, "skip-updates", false, "Skip automatic updates")
+	rootCmd.Flags().BoolVar(&cfg.AutoUpdate, "auto-update", false, "Enable automatic updates (Linux only)")
 	rootCmd.Flags().IntVar(&cfg.IntervalMinutes, "interval-minutes", 1, "Reporting interval in minutes")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -54,10 +54,10 @@ func runDaemon(cfg config.Config) {
 	log.Printf("Starting Uppi Agent v%s", config.Version)
 	log.Printf("Instance: %s", cfg.Instance)
 	log.Printf("Interval: %d minutes", cfg.IntervalMinutes)
-	log.Printf("Skip Updates: %v", cfg.SkipUpdates)
+	log.Printf("Auto Update: %v", cfg.AutoUpdate)
 
-	// Check for updates unless skipped
-	if !cfg.SkipUpdates {
+	// Check for updates if enabled
+	if cfg.AutoUpdate {
 		updater.CheckForUpdates()
 	}
 
